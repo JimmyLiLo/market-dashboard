@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jimmy 市場儀表板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">Jimmy<span>市場後台</span></div>
+      <nav class="nav" id="nav" aria-label="頁面"></nav>
+    </aside>
+
+    <main class="main">
+      <section class="page" id="page-market">
+        <header class="head">
+          <div>
+            <h1>市場總覽</h1>
+            <p class="lede" id="lede">載入中…</p>
+          </div>
+          <div class="head-tools">
+            <span class="stamp" id="stamp"></span>
+            <button type="button" class="btn" id="refresh">重新整理數據</button>
+          </div>
+        </header>
+
+        <div class="tiles" id="tiles"></div>
+
+        <div class="bar">
+          <h2>走勢</h2>
+          <div class="range" role="group" aria-label="期間">
+            <button type="button" data-range="1" aria-pressed="false">1個月</button>
+            <button type="button" data-range="3" aria-pressed="false">3個月</button>
+            <button type="button" data-range="6" aria-pressed="false">6個月</button>
+            <button type="button" data-range="12" aria-pressed="true">1年</button>
+          </div>
+        </div>
+
+        <div id="groups"></div>
+        <p class="foot">漲跌依台股慣例，紅漲綠跌。數字僅供參考，不構成投資建議。</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <script src="config.js"></script>
+  <script src="indicators.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

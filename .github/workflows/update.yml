@@ -1,0 +1,41 @@
+name: 抓數據並部署網站
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 每 15 分鐘一次（GitHub 排程可能延遲幾分鐘）
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # 上一次部署的數據當備援：這次某個來源抓不到時沿用
+      - name: 取回上次的數據
+        run: curl -sf "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/market.json" -o site/data/market.json || true
+      - name: 抓數據
+        run: node scripts/fetch.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
