@@ -2,7 +2,9 @@
   const CFG = window.MK_CONFIG || {};
   const INDS = window.MK_INDICATORS;
   const GROUPS = window.MK_GROUPS;
-  const state = {series: {}, updatedAt: null, months: 12};
+  const TABS = window.MK_TABS;
+  const tabOf = (ind) => GROUPS.find((g) => g.id === ind.group)?.tab;
+  const state = {series: {}, updatedAt: null, months: 12, tab: TABS[0].id};
 
   const $ = (sel) => document.querySelector(sel);
   const el = (tag, cls, text) => {
@@ -22,8 +24,25 @@
     a.href = `#${p.id}`;
     nav.append(a);
   }
+  for (const t of TABS) {
+    const b = el('button', 'tab', t.name);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.dataset.tab = t.id;
+    b.addEventListener('click', () => {
+      location.hash = t.id;
+    });
+    $('#tabs').append(b);
+  }
+  // 網址 #macro、#us 是市場總覽裡的分頁
   const route = () => {
-    const id = location.hash.slice(1) || window.MK_PAGES[0].id;
+    let id = location.hash.slice(1) || window.MK_PAGES[0].id;
+    if (TABS.some((t) => t.id === id)) {
+      state.tab = id;
+      id = 'market';
+    }
+    for (const b of document.querySelectorAll('#tabs [role="tab"]')) b.setAttribute('aria-selected', String(b.dataset.tab === state.tab));
+    if (typeof render === 'function' && state.updatedAt) render();
     for (const p of window.MK_PAGES) {
       const sec = document.getElementById(`page-${p.id}`);
       if (sec) sec.hidden = p.id !== id;
@@ -50,7 +69,7 @@
       ...INDS.filter((i) => i.csv).map((i) => fetch(`${i.csv}?${bust}`).then((r) => r.text()).then((t) => [i.id, parseCsv(t)])),
     ]);
     const series = {};
-    for (const [id, s] of Object.entries(market.series || {})) series[id] = {rows: s.rows, stale: !!s.stale};
+    for (const [id, s] of Object.entries(market.series || {})) series[id] = {rows: s.rows, stale: !!s.stale, ext: s.ext || null};
     for (const [id, rows] of csvs) series[id] = {rows, manual: true};
     state.series = series;
     state.updatedAt = market.updatedAt;
@@ -114,7 +133,7 @@
     const fv = (v) => fmt(v, ind.dp);
     const y = d3.scaleLinear(d3.extent(s, (p) => p.v), [H - mb, mt]).nice(4);
     const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', `${ind.name}走勢圖`);
-    const yt = y.ticks(4), yf = y.tickFormat(4, ',');
+    const yt = y.ticks(4), yf = y.tickFormat(4, ',f');
     const ylab = svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'tick').text(yf);
     const ml = (d3.max(ylab.nodes(), (n) => n.getComputedTextLength()) || 0) + 10;
     const l = s.at(-1);
@@ -169,20 +188,27 @@
   // ---------- 畫面 ----------
   const tiles = $('#tiles'), groups = $('#groups');
   const tileEls = {}, chartEls = {};
-  for (const ind of INDS) {
+  // 依分組順序排卡片，同一組的指標排在一起
+  const ordered = GROUPS.flatMap((g) => INDS.filter((i) => i.group === g.id));
+  for (const ind of ordered) {
     const t = el('article', 'tile');
+    t.dataset.tab = tabOf(ind);
     const val = el('div', 'val');
     const chg = el('div', 'chg');
+    const ext = el('div', 'ext');
     const sp = el('div', 'spark');
     const asof = el('div', 'asof');
-    t.append(el('h3', null, ind.name), val, chg, sp, asof);
+    t.append(el('h3', null, ind.name), val, chg);
+    if (ind.ext) t.append(ext);
+    t.append(sp, asof);
     tiles.append(t);
-    tileEls[ind.id] = {val, chg, sp, asof};
+    tileEls[ind.id] = {val, chg, ext, sp, asof};
   }
   for (const g of GROUPS) {
     const items = INDS.filter((i) => i.group === g.id);
     if (!items.length) continue;
     const sec = el('section', 'group');
+    sec.dataset.tab = g.tab;
     const cards = el('div', 'cards');
     sec.append(el('h2', null, g.name), cards);
     for (const ind of items) {
@@ -195,10 +221,31 @@
     groups.append(sec);
   }
 
+  // 盤前（和前一日收盤比）、盤後（和當日收盤比）
+  const tw = (iso) => new Date(iso).toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false});
+  function extLines(box, ind, ext) {
+    box.replaceChildren();
+    for (const [key, label] of [['pre', '盤前'], ['post', '盤後']]) {
+      const x = ext?.[key];
+      const row = el('div', 'ext-row');
+      row.append(el('span', 'ext-label', label));
+      if (x && x.base) {
+        const pct = (x.price - x.base) / x.base;
+        row.append(el('b', null, fmt(x.price, ind.dp)), el('span', tone(pct), `${sign(pct)}${Math.abs(pct * 100).toFixed(2)}%`), el('span', 'ext-time', tw(x.time)));
+      } else {
+        row.append(el('span', 'ext-time', '沒有成交'));
+      }
+      box.append(row);
+    }
+  }
+
   function render() {
+    for (const n of document.querySelectorAll('[data-tab]:not([role="tab"])')) n.hidden = n.dataset.tab !== state.tab;
     let mover = null;
     for (const ind of INDS) {
+      if (tabOf(ind) !== state.tab) continue;
       const e = tileEls[ind.id], sm = summary(ind), ser = state.series[ind.id];
+      if (ind.ext) extLines(e.ext, ind, ser?.ext);
       e.val.replaceChildren();
       if (!sm) {
         e.val.textContent = '—';
