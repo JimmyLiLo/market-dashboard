@@ -69,7 +69,7 @@
       ...INDS.filter((i) => i.csv).map((i) => fetch(`${i.csv}?${bust}`).then((r) => r.text()).then((t) => [i.id, parseCsv(t)])),
     ]);
     const series = {};
-    for (const [id, s] of Object.entries(market.series || {})) series[id] = {rows: s.rows, stale: !!s.stale, ext: s.ext || null};
+    for (const [id, s] of Object.entries(market.series || {})) series[id] = {rows: s.rows, stale: !!s.stale, ext: s.ext || null, spot: s.spot || null};
     for (const [id, rows] of csvs) series[id] = {rows, manual: true};
     state.series = series;
     state.updatedAt = market.updatedAt;
@@ -255,12 +255,16 @@
         chart(chartEls[ind.id], [], ind);
         continue;
       }
-      e.val.append(document.createTextNode(fmt(sm.last.v, ind.dp)), el('small', null, ind.unit));
+      // 有現貨報價的指標（黃金）：大數字用現貨，日變動和走勢用期貨
+      const spot = ind.spot ? ser.spot : null;
+      e.val.append(document.createTextNode(fmt(spot ? spot.price : sm.last.v, ind.dp)), el('small', null, ind.unit));
       e.chg.className = `chg ${tone(sm.change)}`;
-      e.chg.replaceChildren(document.createTextNode(sm.text), el('span', null, ' 較前一交易日'));
+      e.chg.replaceChildren(document.createTextNode(`${spot ? '期貨 ' : ''}${sm.text}`), el('span', null, ' 較前一交易日'));
       spark(e.sp, lastMonths(sm.s, 3));
       e.asof.className = `asof${ser.stale ? ' stale' : ''}`;
-      e.asof.textContent = `近3個月 · 截至 ${sm.last.date}${ser.stale ? ' · 這次沒抓到，顯示上次資料' : ser.manual ? ' · 手動更新' : ''}`;
+      e.asof.textContent = spot
+        ? `現貨 ${tw(spot.time)} · 走勢為期貨`
+        : `近3個月 · 截至 ${sm.last.date}${ser.stale ? ' · 這次沒抓到，顯示上次資料' : ser.manual ? ' · 手動更新' : ''}`;
       chart(chartEls[ind.id], lastMonths(sm.s, state.months), ind);
       if (Number.isFinite(sm.pct) && (!mover || Math.abs(sm.pct) > Math.abs(mover.pct))) mover = {ind, pct: sm.pct};
     }
