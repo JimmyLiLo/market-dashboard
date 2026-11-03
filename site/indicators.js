@@ -29,6 +29,8 @@ window.MK_INDICATORS = [
     note: '台北外匯市場美元兌新台幣，1 美元可換多少台幣，數字上升代表台幣貶值，來源鉅亨網。'},
   {id: 'ftse_tw', name: '富台指期（SGX TWN）', short: '富台指', unit: '點', dp: 2, group: 'tw',
     note: '新加坡交易所富時台灣指數期貨，來源 HiStock。2026/7/20 上市，資料自 7/31 起。'},
+  {id: 'txf', name: '台指期（TX 近月）', short: '台指期', unit: '點', dp: 0, group: 'tw',
+    note: '台灣期貨交易所臺股期貨近月合約，來源鉅亨網。夜盤算在下一個交易日，所以晚上會看到隔天的日期。'},
   {id: 'taiex', name: '台股加權指數', short: '加權指數', unit: '點', dp: 2, group: 'tw',
     note: 'TAIEX（^TWII），來源 Yahoo Finance。'},
   {id: 'us_cds5y', name: '美國5年期CDS', short: '美國5年CDS', unit: 'bp', dp: 2, group: 'usrates', csv: 'data/us_cds5y.csv',
@@ -54,4 +56,11 @@ window.MK_INDICATORS = [
 
 window.MK_PAGES = [
   {id: 'market', name: '市場總覽'},
+  {id: 'chips', name: '籌碼分析'},
+];
+
+// 籌碼分析：信用交易餘額（id 對上 lib/sources.mjs 的 SNAPSHOTS）
+window.MK_MARGIN = [
+  {id: 'margin_twse', name: '上市', note: '來源：臺灣證券交易所 信用交易統計'},
+  {id: 'margin_tpex', name: '上櫃', note: '來源：證券櫃檯買賣中心 融資融券餘額合計'},
 ];

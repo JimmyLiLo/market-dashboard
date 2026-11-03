@@ -14,11 +14,15 @@ const next = await fetchAll();
 for (const [id, msg] of Object.entries(next.errors)) {
   console.warn(`! ${id}: ${msg}`);
   if (prev.series?.[id]) next.series[id] = {...prev.series[id], stale: true};
+  if (prev.snapshots?.[id]) next.snapshots[id] = {...prev.snapshots[id], stale: true};
 }
 
 await writeFile(file, JSON.stringify(next));
 for (const [id, s] of Object.entries(next.series)) {
   const last = s.rows.at(-1);
   console.log(`${id}: ${s.rows.length} 筆，最新 ${last?.[0]} = ${last?.[1]}${s.stale ? '（沿用舊資料）' : ''}`);
+}
+for (const [id, s] of Object.entries(next.snapshots)) {
+  console.log(`${id}: ${s.date}${s.stale ? '（沿用舊資料）' : ''}`);
 }
 if (Object.keys(next.series).length === 0) process.exit(1);

@@ -24,8 +24,8 @@
             <p class="lede" id="lede">載入中…</p>
           </div>
           <div class="head-tools">
-            <span class="stamp" id="stamp"></span>
-            <button type="button" class="btn" id="refresh">重新整理數據</button>
+            <span class="stamp"></span>
+            <button type="button" class="btn" data-refresh>重新整理數據</button>
           </div>
         </header>
 
@@ -45,6 +45,22 @@
 
         <div id="groups"></div>
         <p class="foot">漲跌依台股慣例，紅漲綠跌。數字僅供參考，不構成投資建議。</p>
+      </section>
+
+      <section class="page" id="page-chips" hidden>
+        <header class="head">
+          <div>
+            <h1>籌碼分析</h1>
+            <p class="lede" id="chips-lede">載入中…</p>
+          </div>
+          <div class="head-tools">
+            <span class="stamp"></span>
+            <button type="button" class="btn" data-refresh>重新整理數據</button>
+          </div>
+        </header>
+
+        <div id="margin"></div>
+        <p class="foot">融資、融券餘額為最新一個交易日，增減和前一交易日比。交易所於交易日晚間公布，公布前顯示前一交易日。券資比 = 融券餘額 ÷ 融資餘額（張數）。</p>
       </section>
     </main>
   </div>

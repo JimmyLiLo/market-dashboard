@@ -4,7 +4,7 @@
   const GROUPS = window.MK_GROUPS;
   const TABS = window.MK_TABS;
   const tabOf = (ind) => GROUPS.find((g) => g.id === ind.group)?.tab;
-  const state = {series: {}, updatedAt: null, months: 12, tab: TABS[0].id};
+  const state = {series: {}, snapshots: {}, updatedAt: null, months: 12, tab: TABS[0].id};
 
   const $ = (sel) => document.querySelector(sel);
   const el = (tag, cls, text) => {
@@ -72,6 +72,7 @@
     for (const [id, s] of Object.entries(market.series || {})) series[id] = {rows: s.rows, stale: !!s.stale, ext: s.ext || null, spot: s.spot || null};
     for (const [id, rows] of csvs) series[id] = {rows, manual: true};
     state.series = series;
+    state.snapshots = market.snapshots || {};
     state.updatedAt = market.updatedAt;
     state.live = !!CFG.api;
   }
@@ -276,22 +277,66 @@
     }
     if (state.updatedAt) {
       const t = new Date(state.updatedAt);
-      $('#stamp').textContent = `${state.live ? '即時抓取' : '資料抓取'}於 ${t.toLocaleString('zh-TW', {hour12: false})}`;
+      for (const n of document.querySelectorAll('.stamp')) n.textContent = `${state.live ? '即時抓取' : '資料抓取'}於 ${t.toLocaleString('zh-TW', {hour12: false})}`;
     }
+    renderChips();
+  }
+
+  // ---------- 籌碼分析 ----------
+  // 每個市場四張卡：融資金額（億元）、融資張數、融券張數、券資比
+  function renderChips() {
+    const root = $('#margin');
+    root.replaceChildren();
+    let date = null;
+    for (const m of window.MK_MARGIN) {
+      const x = state.snapshots[m.id];
+      const sec = el('section', 'mkt');
+      const head = el('div', 'mkt-head');
+      head.append(el('h2', null, `${m.name}　融資融券餘額`));
+      head.append(el('span', `asof${x?.stale ? ' stale' : ''}`, x ? `${x.date}${x.stale ? ' · 這次沒抓到，顯示上次資料' : ''} · ${m.note}` : '沒有資料'));
+      const grid = el('div', 'tiles');
+      sec.append(head, grid);
+      root.append(sec);
+      if (!x) continue;
+      date = date || x.date;
+      const ratio = (k) => (x.shortLots[k] / x.marginLots[k]) * 100;
+      const items = [
+        ['融資餘額（金額）', x.marginAmt.now / 1e5, x.marginAmt.prev / 1e5, 2, '億元'],
+        ['融資餘額（張數）', x.marginLots.now, x.marginLots.prev, 0, '張'],
+        ['融券餘額（張數）', x.shortLots.now, x.shortLots.prev, 0, '張'],
+        ['券資比', ratio('now'), ratio('prev'), 2, '%'],
+      ];
+      for (const [label, now, prev, dp, unit] of items) {
+        const t = el('article', 'tile');
+        const val = el('div', 'val');
+        val.append(document.createTextNode(fmt(now, dp)), el('small', null, unit));
+        const d = now - prev;
+        const chg = el('div', `chg ${tone(d)}`);
+        const tail = unit === '%' ? ' 個百分點' : `（${sign(d)}${Math.abs((d / prev) * 100).toFixed(2)}%）`;
+        chg.append(document.createTextNode(`${sign(d)}${fmt(Math.abs(d), dp)}${tail}`), el('span', null, ' 較前一交易日'));
+        t.append(el('h3', null, label), val, chg);
+        grid.append(t);
+      }
+    }
+    $('#chips-lede').textContent = date ? `上市、上櫃信用交易餘額，資料日期 ${date}。` : '目前沒有籌碼資料。';
   }
 
   async function refresh() {
-    const btn = $('#refresh');
-    btn.disabled = true;
-    btn.textContent = '更新中…';
+    const btns = document.querySelectorAll('[data-refresh]');
+    for (const b of btns) {
+      b.disabled = true;
+      b.textContent = '更新中…';
+    }
     try {
       await load();
       render();
     } catch (e) {
-      $('#lede').textContent = `數據載入失敗（${e.message}），請稍後再按「重新整理數據」。`;
+      for (const id of ['#lede', '#chips-lede']) $(id).textContent = `數據載入失敗（${e.message}），請稍後再按「重新整理數據」。`;
     } finally {
-      btn.disabled = false;
-      btn.textContent = '重新整理數據';
+      for (const b of btns) {
+        b.disabled = false;
+        b.textContent = '重新整理數據';
+      }
     }
   }
 
@@ -302,7 +347,7 @@
       render();
     });
   }
-  $('#refresh').addEventListener('click', refresh);
+  for (const b of document.querySelectorAll('[data-refresh]')) b.addEventListener('click', refresh);
   let rt;
   addEventListener('resize', () => {
     clearTimeout(rt);
