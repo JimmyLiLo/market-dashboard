@@ -50,6 +50,10 @@ window.MK_INDICATORS = [
     note: 'Microsoft，NASDAQ: MSFT，來源 Yahoo Finance。'},
   {id: 'aapl', name: '蘋果（AAPL）', short: '蘋果', unit: '美元', dp: 2, group: 'bigtech', ext: true,
     note: 'Apple，NASDAQ: AAPL，來源 Yahoo Finance。'},
+  {id: 'amzn', name: '亞馬遜（AMZN）', short: '亞馬遜', unit: '美元', dp: 2, group: 'bigtech', ext: true,
+    note: 'Amazon.com，NASDAQ: AMZN，來源 Yahoo Finance。'},
+  {id: 'meta', name: 'Meta（META）', short: 'Meta', unit: '美元', dp: 2, group: 'bigtech', ext: true,
+    note: 'Meta Platforms，NASDAQ: META，來源 Yahoo Finance。'},
   {id: 'spcx', name: 'SpaceX（SPCX）', short: 'SpaceX', unit: '美元', dp: 2, group: 'space', ext: true,
     note: 'Space Exploration Technologies，SPCX，來源 Yahoo Finance。上市未滿一年，資料從上市日開始。'},
 ];
